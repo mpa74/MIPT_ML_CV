@@ -2,3 +2,16 @@
 03-sem-NN/solution.ipynb
 03-sem-NN/test/*
 03-sem-NN/template_x.ipynb
+.DS_Store
+05-image-segm/data/*
+06-sem-video/Road_cv_5/*
+06-sem-video/raft/*
+06-sem-video/Road_ffmpeg_5/*
+06-sem-video/road_5.mp4
+Homeworks/hw1/classifiers/__pycache__/*
+Homeworks/hw1/datasets/cifar-10-batches-py/*
+Homeworks/hw1/utils/__pycache__/*
+Homeworks/hw1/datasets/cifar-10-python.tar.gz
+06-sem-video/template.ipynb
+06-sem-video/raft.zip
+Homeworks/hw1/saved/softmax.npy
