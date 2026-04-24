@@ -1,6 +1,6 @@
 
 
-Полезные ссылки и материалы
+### Полезные ссылки и материалы
 [Обратное распространение ошибки](https://xnought.github.io/backprop-explainer/)
 
 [Augmentation](https://habr.com/ru/articles/1008560/)
@@ -12,4 +12,6 @@
 
 [Image segmentation eval](https://www.jeremyjordan.me/evaluating-image-segmentation-models/)
 
-[Object tracking using IoU](https://github.com/PaulKlinger/ioutrack)
+[Object tracking SORT & ByteTrack](https://github.com/PaulKlinger/ioutrack)
+
+[Различные реализации ViT](https://github.com/lucidrains/vit-pytorch/tree/main)
