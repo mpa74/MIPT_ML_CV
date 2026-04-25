@@ -297,4 +297,3 @@ scores[i, c] — оценка классификации для X[i] и клас
         self.params = params
         print(fname, "loaded.")
         return True
-

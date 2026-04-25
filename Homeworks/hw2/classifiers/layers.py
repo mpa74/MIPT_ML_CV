@@ -54,6 +54,11 @@ def affine_backward(dout, cache):
     # TODO:  Реализуйте обратный проход полносвязного слоя.         
     ###########################################################################
     
+    x_reshaped = x.reshape(x.shape[0], -1)
+    dx = dout.dot(w.T).reshape(x.shape)
+    dw = x_reshaped.T.dot(dout)
+    db = np.sum(dout, axis=0)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -95,7 +100,9 @@ def relu_backward(dout, cache):
     ###########################################################################
     # TODO: Реализуйте RELU на обраьном проходе
     ###########################################################################
-    #
+    
+    dx = dout * (x > 0)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -118,6 +125,15 @@ def softmax_loss(x, y):
     # YOUR CODE
     ###########################################################################
     
+    shifted_logits = x - np.max(x, axis=1, keepdims=True)
+    exp_scores = np.exp(shifted_logits)
+    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    N = x.shape[0]
+    loss = -np.sum(np.log(probs[np.arange(N), y])) / N
+    dx = probs.copy()
+    dx[np.arange(N), y] -= 1
+    dx /= N
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -412,7 +428,30 @@ def conv_forward_naive(x, w, b, conv_param):
     # TODO: Напишите реализацию свертки прямого прохода.                         #
     # Hint: можно использовать np.pad для паддинга.                      #
     ###########################################################################
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
     
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    
+    H_out = 1 + (H + 2 * pad - HH) // stride
+    W_out = 1 + (W + 2 * pad - WW) // stride
+    
+    out = np.zeros((N, F, H_out, W_out))
+    
+    x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
+    
+    for n in range(N):
+        for f in range(F):
+            for i in range(H_out):
+                for j in range(W_out):
+                    i_start = i * stride
+                    i_end = i_start + HH
+                    j_start = j * stride
+                    j_end = j_start + WW
+                    
+                    x_slice = x_padded[n, :, i_start:i_end, j_start:j_end]
+                    out[n, f, i, j] = np.sum(x_slice * w[f]) + b[f]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -436,6 +475,40 @@ def conv_backward_naive(dout, cache):
     # TODO: Реализация светки обратного прохода.                        #
     ###########################################################################
     
+    x, w, b, conv_param = cache
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    
+    H_out = dout.shape[2]
+    W_out = dout.shape[3]
+    
+    dx = np.zeros_like(x)
+    dw = np.zeros_like(w)
+    db = np.zeros_like(b)
+    
+    x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode='constant')
+    dx_padded = np.zeros_like(x_padded)
+    
+    for n in range(N):
+        for f in range(F):
+            for i in range(H_out):
+                for j in range(W_out):
+                    i_start = i * stride
+                    i_end = i_start + HH
+                    j_start = j * stride
+                    j_end = j_start + WW
+                    
+                    x_slice = x_padded[n, :, i_start:i_end, j_start:j_end]
+                    
+                    dw[f] += x_slice * dout[n, f, i, j]
+                    dx_padded[n, :, i_start:i_end, j_start:j_end] += w[f] * dout[n, f, i, j]
+                    db[f] += dout[n, f, i, j]
+    
+    dx = dx_padded[:, :, pad:pad+H, pad:pad+W]
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -467,6 +540,29 @@ def max_pool_forward_naive(x, pool_param):
     # TODO: Implement the max-pooling forward pass                            #
     ###########################################################################
     
+    N, C, H, W = x.shape
+    
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+    
+    H_out = 1 + (H - pool_height) // stride
+    W_out = 1 + (W - pool_width) // stride
+    
+    out = np.zeros((N, C, H_out, W_out))
+    
+    for n in range(N):
+        for c in range(C):
+            for i in range(H_out):
+                for j in range(W_out):
+                    i_start = i * stride
+                    i_end = i_start + pool_height
+                    j_start = j * stride
+                    j_end = j_start + pool_width
+                    
+                    x_slice = x[n, c, i_start:i_end, j_start:j_end]
+                    out[n, c, i, j] = np.max(x_slice)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -490,6 +586,31 @@ def max_pool_backward_naive(dout, cache):
     # TODO: Implement the max-pooling backward pass                           #
     ###########################################################################
     
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+    
+    H_out = dout.shape[2]
+    W_out = dout.shape[3]
+    
+    dx = np.zeros_like(x)
+    
+    for n in range(N):
+        for c in range(C):
+            for i in range(H_out):
+                for j in range(W_out):
+                    i_start = i * stride
+                    i_end = i_start + pool_height
+                    j_start = j * stride
+                    j_end = j_start + pool_width
+                    
+                    x_slice = x[n, c, i_start:i_end, j_start:j_end]
+                    mask = (x_slice == np.max(x_slice))
+                    dx[n, c, i_start:i_end, j_start:j_end] += mask * dout[n, c, i, j]
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
